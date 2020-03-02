@@ -13,7 +13,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 defuser = "admin"
 dclist = ["dal3", "pok3"]
-actions = ["listvms", "listsrvs"]
+actions = ["listvms", "listsrvs", "showvm"]
 baseUri = ""
 ovmserver = ""
 
@@ -79,6 +79,13 @@ def vmList(args, baseUri, extrav):
         )
 
 
+def srvList(args, baseUri, extrav):
+    print("{:^20} {:^30}".format("NAME", "SRVSTATUS"))
+    res = OpenSess(args, baseUri, extrav)
+    for i in res.json():
+        print("{:20} {:30}".format(i["name"], i["serverRunState"]))
+
+
 def main():
     args = parseargs()
     if not args.dcinfo:
@@ -100,11 +107,8 @@ def main():
     if args.action == "listvms":
         vmList(args, baseUri, "Vm")
 
-    print("I am using listvms argument")
-    print(args.dcinfo)
-    print(args.user, args.passwd)
-    print(args.action)
-    print(baseUri)
+    if args.action == "listsrvs":
+        srvList(args, baseUri, "Server")
 
 
 if __name__ == "__main__":
