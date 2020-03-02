@@ -49,7 +49,10 @@ def OpenSess(args, baseUri, extrav):
     s.verify = False
     s.headers.update({"Accept": "application/json", "Content-Type": "application/json"})
     r = s.get(baseUri + "/" + extrav)
-    return r
+    if r.status_code != 200:
+        sys.exit(r.status_code)
+    else:
+        return r
 
 
 def vmList(args, baseUri, extrav):
