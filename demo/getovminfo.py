@@ -261,8 +261,6 @@ def main():
         ]
         (current_dlist, scsi_idlist, output_list) = vmShowd(args, baseUri, "Vm")
         WriteToFile(fname, fieldnames, output_list)
-        print(scsi_idlist)
-        print(current_dlist)
 
     if args.action == "srvdisks" and (args.srv):
         fname = "{}_diskinfo.csv".format(args.srv)
@@ -276,7 +274,6 @@ def main():
         ]
         (diskid_list, output_list) = srvDiskList(args, baseUri, "Server")
         WriteToFile(fname, fieldnames, output_list)
-        print(diskid_list)
 
 
 if __name__ == "__main__":
