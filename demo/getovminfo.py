@@ -16,7 +16,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 defuser = "admin"
 dclist = ["dal3", "pok3"]
-actions = ["listvms", "listsrvs", "showvmd"]
+actions = ["listvms", "listsrvs", "showvmd", "srvdisks"]
 baseUri = ""
 ovmserver = ""
 
@@ -34,6 +34,7 @@ def parseargs():
     parser.add_argument("-u", "--user", nargs="?", default=defuser, help="OVM Username")
     parser.add_argument("-p", "--passwd", nargs="?", help="OVM Password")
     parser.add_argument("-v", "--vm", nargs="?", help="VM Name")
+    parser.add_argument("-sr", "--srv", nargs="?", help="Server Name")
     parser.add_argument(
         "-d", "--dc", nargs="?", help="Which DataCenter to Workon", choices=dclist,
     )
@@ -85,10 +86,28 @@ def vmList(args, baseUri, extrav):
 
 
 def srvList(args, baseUri, extrav):
-    print("{:^20} {:^30}".format("NAME", "SRVSTATUS"))
+    print("{:^20} {:^30} {:^20}".format("NAME", "SRVSTATUS", "SERIALNO"))
     res = OpenSess(args, baseUri, extrav)
     for i in res.json():
-        print("{:20} {:30}".format(i["name"], i["serverRunState"]))
+        print(
+            "{:20} {:30} {:20}".format(
+                i["name"], i["serverRunState"], i["serialNumber"]
+            )
+        )
+
+
+def srvDiskList(args, baseUri, extrav):
+    res = OpenSess(args, baseUri, extrav)
+    time.sleep(1)
+    for i in res.json():
+        if i["name"] == args.srv:
+            print(
+                "{:20} {:30} {:20}".format(
+                    i["name"], i["serverRunState"], i["serialNumber"]
+                )
+            )
+            for d in i["storageElementIds"]:
+                print(d["value"])
 
 
 def vmShowd(args, baseUri, extrav):
@@ -212,6 +231,9 @@ def main():
 
     if args.action == "showvmd" and (args.vm):
         vmShowd(args, baseUri, "Vm")
+
+    if args.action == "srvdisks" and (args.srv):
+        srvDiskList(args, baseUri, "Server")
 
 
 if __name__ == "__main__":
