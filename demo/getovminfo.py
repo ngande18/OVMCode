@@ -97,6 +97,8 @@ def srvList(args, baseUri, extrav):
 
 
 def srvDiskList(args, baseUri, extrav):
+    output_list = []
+    diskid_list = []
     res = OpenSess(args, baseUri, extrav)
     time.sleep(1)
     for i in res.json():
@@ -107,25 +109,31 @@ def srvDiskList(args, baseUri, extrav):
                 )
             )
             for d in i["storageElementIds"]:
-                print(d["value"])
+                extrav = "StorageElement/" + d["value"]
+                pdres = OpenSess(args, baseUri, extrav)
+                time.sleep(1)
+                pdres_out = pdres.json()
+                dname = str(pdres_out["deviceNames"][0])
+                dname = dname.split("/dev/mapper/")[1]
+                to_append = {
+                    "DISKTYPE": pdres_out["type"],
+                    "SIZE": (pdres_out["size"] / 1024 / 1024 / 1024),
+                    "SHAREABLE": pdres_out["shareable"],
+                    "NAME": pdres_out["name"],
+                    "VENDOR": pdres_out["vendor"],
+                    "DISKINFO": dname,
+                }
+                output_list.append(copy.deepcopy(to_append))
+                diskid_list.append(dname)
+    return (diskid_list, output_list)
 
 
 def vmShowd(args, baseUri, extrav):
-    fname = "{}_diskinfo.csv".format(args.vm)
-    fieldnames = [
-        "SCSIID",
-        "OVMID",
-        "DISKTYPE",
-        "SIZE",
-        "SHAREABLE",
-        "NAME",
-        "VENDOR",
-        "DISKINFO",
-    ]
-
     res = OpenSess(args, baseUri, extrav)
     time.sleep(1)
     output_list = []
+    scsi_idlist = []
+    current_dlist = []
     for i in res.json():
         if i["name"] == args.vm:
             print("{:20} {:55}".format(i["name"], i["vmRunState"]))
@@ -158,6 +166,8 @@ def vmShowd(args, baseUri, extrav):
                             "DISKINFO": pdres_out["absolutePath"],
                         }
                         output_list.append(copy.deepcopy(to_append))
+                        scsi_idlist.append(dout["diskTarget"])
+
                         # print(json.dumps(pdres_out, indent=2))
                         # print(
                         #     dout["diskTarget"],
@@ -179,6 +189,8 @@ def vmShowd(args, baseUri, extrav):
                             + str(dout["diskTarget"])
                             + " Disk information"
                         )
+                        dname = str(pdres_out["deviceNames"][0])
+                        dname = dname.split("/dev/mapper/")[1]
                         to_append = {
                             "SCSIID": dout["diskTarget"],
                             "OVMID": dout["id"]["value"],
@@ -187,15 +199,21 @@ def vmShowd(args, baseUri, extrav):
                             "SHAREABLE": pdres_out["shareable"],
                             "NAME": pdres_out["name"],
                             "VENDOR": pdres_out["vendor"],
-                            "DISKINFO": pdres_out["deviceNames"][0],
+                            "DISKINFO": dname,
                         }
 
                         output_list.append(copy.deepcopy(to_append))
+                        scsi_idlist.append(dout["diskTarget"])
+                        current_dlist.append(dname)
 
     # for row in output_list:
     #     print(type(row))
     #     print(row)
 
+    return (current_dlist, scsi_idlist, output_list)
+
+
+def WriteToFile(fname, fieldnames, output_list):
     with open(fname, "w") as file_name:
         Final_output = csv.DictWriter(file_name, fieldnames=fieldnames)
         Final_output.writeheader()
@@ -230,10 +248,35 @@ def main():
         srvList(args, baseUri, "Server")
 
     if args.action == "showvmd" and (args.vm):
-        vmShowd(args, baseUri, "Vm")
+        fname = "{}_diskinfo.csv".format(args.vm)
+        fieldnames = [
+            "SCSIID",
+            "OVMID",
+            "DISKTYPE",
+            "SIZE",
+            "SHAREABLE",
+            "NAME",
+            "VENDOR",
+            "DISKINFO",
+        ]
+        (current_dlist, scsi_idlist, output_list) = vmShowd(args, baseUri, "Vm")
+        WriteToFile(fname, fieldnames, output_list)
+        print(scsi_idlist)
+        print(current_dlist)
 
     if args.action == "srvdisks" and (args.srv):
-        srvDiskList(args, baseUri, "Server")
+        fname = "{}_diskinfo.csv".format(args.srv)
+        fieldnames = [
+            "DISKTYPE",
+            "SIZE",
+            "SHAREABLE",
+            "NAME",
+            "VENDOR",
+            "DISKINFO",
+        ]
+        (diskid_list, output_list) = srvDiskList(args, baseUri, "Server")
+        WriteToFile(fname, fieldnames, output_list)
+        print(diskid_list)
 
 
 if __name__ == "__main__":
