@@ -16,7 +16,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 defuser = "admin"
 dclist = ["dal3", "pok3"]
-actions = ["listvms", "listsrvs", "showvmd", "srvdisks"]
+actions = ["listvms", "listsrvs", "showvmd", "srvdisks", "adddisks"]
 baseUri = ""
 ovmserver = ""
 
@@ -35,6 +35,9 @@ def parseargs():
     parser.add_argument("-p", "--passwd", nargs="?", help="OVM Password")
     parser.add_argument("-v", "--vm", nargs="?", help="VM Name")
     parser.add_argument("-sr", "--srv", nargs="?", help="Server Name")
+    parser.add_argument(
+        "-a", "--ans", nargs="?", help="Answerfile for DiskAddition in CSV"
+    )
     parser.add_argument(
         "-d", "--dc", nargs="?", help="Which DataCenter to Workon", choices=dclist,
     )
@@ -96,6 +99,37 @@ def srvList(args, baseUri, extrav):
         )
 
 
+def Diskadd(args, baseUri, extrav):
+    pass
+
+
+def ValidateAnsFile(args, scsiids, cphydisks, sphydisks, disknames):
+    validres = " "
+    with open(args.ans, "r") as f:
+        csv_reader = csv.reader(f)
+        next(csv_reader)
+        for line in csv_reader:
+            if line[0] in scsiids:
+                print(line[0] + " is already used on " + args.vm)
+                validres = "999"
+                sys.exit(0)
+            elif line[1] in cphydisks:
+                print(line[0] + " is already attached on " + args.vm)
+                validres = "999"
+                sys.exit(0)
+            elif line[1] not in sphydisks:
+                print(line[1] + " is not attached on " + args.srv)
+                validres = "999"
+                sys.exit(0)
+            elif line[4] in disknames:
+                print(line[4] + "diskname is already used on " + args.vm)
+                validres = "999"
+                sys.exit(0)
+            else:
+                validres = 200
+    return validres
+
+
 def srvDiskList(args, baseUri, extrav):
     output_list = []
     diskid_list = []
@@ -134,6 +168,7 @@ def vmShowd(args, baseUri, extrav):
     output_list = []
     scsi_idlist = []
     current_dlist = []
+    currentN_list = []
     for i in res.json():
         if i["name"] == args.vm:
             print("{:20} {:55}".format(i["name"], i["vmRunState"]))
@@ -167,6 +202,7 @@ def vmShowd(args, baseUri, extrav):
                         }
                         output_list.append(copy.deepcopy(to_append))
                         scsi_idlist.append(dout["diskTarget"])
+                        currentN_list.append(pdres_out["name"])
 
                         # print(json.dumps(pdres_out, indent=2))
                         # print(
@@ -205,12 +241,13 @@ def vmShowd(args, baseUri, extrav):
                         output_list.append(copy.deepcopy(to_append))
                         scsi_idlist.append(dout["diskTarget"])
                         current_dlist.append(dname)
+                        currentN_list.append(pdres_out["name"])
 
     # for row in output_list:
     #     print(type(row))
     #     print(row)
 
-    return (current_dlist, scsi_idlist, output_list)
+    return (currentN_list, current_dlist, scsi_idlist, output_list)
 
 
 def WriteToFile(fname, fieldnames, output_list):
@@ -259,8 +296,11 @@ def main():
             "VENDOR",
             "DISKINFO",
         ]
-        (current_dlist, scsi_idlist, output_list) = vmShowd(args, baseUri, "Vm")
+        (currentN_list, current_dlist, scsi_idlist, output_list) = vmShowd(
+            args, baseUri, "Vm"
+        )
         WriteToFile(fname, fieldnames, output_list)
+        print(currentN_list)
 
     if args.action == "srvdisks" and (args.srv):
         fname = "{}_diskinfo.csv".format(args.srv)
@@ -274,6 +314,18 @@ def main():
         ]
         (diskid_list, output_list) = srvDiskList(args, baseUri, "Server")
         WriteToFile(fname, fieldnames, output_list)
+
+    if args.action == "adddisks" and (args.srv) and (args.vm) and (args.ans):
+        print("Validating Current Disk Layout and Answerfile\n")
+        (currentN_list, current_dlist, scsi_idlist, output_list) = vmShowd(
+            args, baseUri, "Vm"
+        )
+        (diskid_list, output_list) = srvDiskList(args, baseUri, "Server")
+        res = ValidateAnsFile(
+            args, scsi_idlist, current_dlist, diskid_list, currentN_list
+        )
+        if res == 200:
+            print("Answer file is validated and Building Commands list")
 
 
 if __name__ == "__main__":
