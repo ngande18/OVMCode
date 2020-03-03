@@ -7,13 +7,14 @@ import getpass
 import json
 import requests
 import urllib3
+import time
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 defuser = "admin"
 dclist = ["dal3", "pok3"]
-actions = ["listvms", "listsrvs", "showvm"]
+actions = ["listvms", "listsrvs", "showvmd"]
 baseUri = ""
 ovmserver = ""
 
@@ -30,8 +31,9 @@ def parseargs():
     )
     parser.add_argument("-u", "--user", nargs="?", default=defuser, help="OVM Username")
     parser.add_argument("-p", "--passwd", nargs="?", help="OVM Password")
+    parser.add_argument("-v", "--vm", nargs="?", help="VM Name")
     parser.add_argument(
-        "-d", "--dcinfo", nargs="?", help="Which DataCenter to Workon", choices=dclist,
+        "-d", "--dc", nargs="?", help="Which DataCenter to Workon", choices=dclist,
     )
 
     args = parser.parse_args()
@@ -39,9 +41,9 @@ def parseargs():
 
 
 def setdc(args):
-    if args.dcinfo == "dal3":
+    if args.dc == "dal3":
         ovmserver = "10.131.26.21:7002"
-    elif args.dcinfo == "pok3":
+    elif args.dc == "pok3":
         ovmserver = "10.130.26.21:7002"
     return "https://" + ovmserver + "/ovm/core/wsapi/rest"
 
@@ -86,12 +88,43 @@ def srvList(args, baseUri, extrav):
         print("{:20} {:30}".format(i["name"], i["serverRunState"]))
 
 
+def vmShowd(args, baseUri, extrav):
+    res = OpenSess(args, baseUri, extrav)
+    time.sleep(1)
+    for i in res.json():
+        if i["name"] == args.vm:
+            print("{:20} {:55}".format(i["name"], i["vmRunState"]))
+            for d in i["vmDiskMappingIds"]:
+                if "CDROM" not in d["name"]:
+                    extrav = "VmDiskMapping/" + d["value"]
+                    dres = OpenSess(args, baseUri, extrav)
+                    time.sleep(1)
+                    dout = dres.json()
+                    if "virtualDiskId" in dout and dout.get("storageElementId") == None:
+                        print(
+                            dout["diskTarget"],
+                            dout["id"]["value"],
+                            dout["virtualDiskId"]["value"],
+                            dout["virtualDiskId"]["name"],
+                        )
+                    elif (
+                        "storageElementId" in dout
+                        and dout.get("storageElementId") != None
+                    ):
+                        print(
+                            dout["diskTarget"],
+                            dout["id"]["value"],
+                            dout["storageElementId"]["value"],
+                            dout["storageElementId"]["name"],
+                        )
+
+
 def main():
     args = parseargs()
-    if not args.dcinfo:
-        print("provide Correct dcinfo")
+    if not args.dc:
+        print("provide Correct DataCenter")
         sys.exit(0)
-    elif args.dcinfo not in dclist:
+    elif args.dc not in dclist:
         print("provide Correct DC Name")
         sys.exit(0)
     else:
@@ -101,7 +134,7 @@ def main():
         if not args.user:
             args.user = input("OVM Username: ")
             args.passwd = getpass.getpass("Provide OVM" + args.user + "password :")
-        else:
+        elif not args.passwd:
             args.passwd = getpass.getpass("Provide OVM admin password :")
 
     if args.action == "listvms":
@@ -109,6 +142,9 @@ def main():
 
     if args.action == "listsrvs":
         srvList(args, baseUri, "Server")
+
+    if args.action == "showvmd" and (args.vm):
+        vmShowd(args, baseUri, "Vm")
 
 
 if __name__ == "__main__":
