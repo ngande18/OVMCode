@@ -9,6 +9,7 @@ import requests
 import urllib3
 import time
 import csv
+import copy
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -102,11 +103,10 @@ def vmShowd(args, baseUri, extrav):
         "VENDOR",
         "DISKINFO",
     ]
-    with open(fname, "w") as file_name:
-        Final_output = csv.DictWriter(file_name, fieldnames=fieldnames)
-        Final_output.writeheader()
+
     res = OpenSess(args, baseUri, extrav)
     time.sleep(1)
+    output_list = []
     for i in res.json():
         if i["name"] == args.vm:
             print("{:20} {:55}".format(i["name"], i["vmRunState"]))
@@ -116,64 +116,72 @@ def vmShowd(args, baseUri, extrav):
                     dres = OpenSess(args, baseUri, extrav)
                     time.sleep(1)
                     dout = dres.json()
-                    for iter in range(len(dout)):
-                        output_list = []
-                        if (
-                            "virtualDiskId" in dout
-                            and dout.get("storageElementId") == None
-                        ):
-                            extrav = "VirtualDisk/" + dout["virtualDiskId"]["value"]
-                            pdres = OpenSess(args, baseUri, extrav)
-                            time.sleep(1)
-                            pdres_out = pdres.json()
-                            pdres_out["vendor"] = " "
+                    # for iter in range(len(dout)):
+                    if "virtualDiskId" in dout and dout.get("storageElementId") == None:
+                        extrav = "VirtualDisk/" + dout["virtualDiskId"]["value"]
+                        pdres = OpenSess(args, baseUri, extrav)
+                        time.sleep(1)
+                        pdres_out = pdres.json()
+                        pdres_out["vendor"] = " "
+                        print(
+                            "Gathering SCSIID "
+                            + str(dout["diskTarget"])
+                            + " Disk information"
+                        )
+                        to_append = {
+                            "SCSIID": dout["diskTarget"],
+                            "OVMID": dout["id"]["value"],
+                            "DISKTYPE": pdres_out["diskType"],
+                            "SIZE": pdres_out["size"],
+                            "SHAREABLE": pdres_out["shareable"],
+                            "NAME": pdres_out["name"],
+                            "VENDOR": pdres_out["vendor"],
+                            "DISKINFO": pdres_out["absolutePath"],
+                        }
+                        output_list.append(copy.deepcopy(to_append))
+                        # print(json.dumps(pdres_out, indent=2))
+                        # print(
+                        #     dout["diskTarget"],
+                        #     dout["id"]["value"],
+                        #     dout["virtualDiskId"]["value"],
+                        #     dout["virtualDiskId"]["name"],
+                        # )
+                    elif (
+                        "storageElementId" in dout
+                        and dout.get("storageElementId") != None
+                    ):
+                        # print(json.dumps(dout, indent=2))
+                        extrav = "StorageElement/" + dout["storageElementId"]["value"]
+                        pdres = OpenSess(args, baseUri, extrav)
+                        time.sleep(1)
+                        pdres_out = pdres.json()
+                        print(
+                            "Gathering SCSIID "
+                            + str(dout["diskTarget"])
+                            + " Disk information"
+                        )
+                        to_append = {
+                            "SCSIID": dout["diskTarget"],
+                            "OVMID": dout["id"]["value"],
+                            "DISKTYPE": pdres_out["type"],
+                            "SIZE": pdres_out["size"],
+                            "SHAREABLE": pdres_out["shareable"],
+                            "NAME": pdres_out["name"],
+                            "VENDOR": pdres_out["vendor"],
+                            "DISKINFO": pdres_out["deviceNames"][0],
+                        }
 
-                            output_list.append(
-                                {
-                                    "SCSIID": dout["diskTarget"],
-                                    "OVMID": dout["id"]["value"],
-                                    "DISKTYPE": pdres_out["diskType"],
-                                    "SIZE": pdres_out["size"],
-                                    "SHAREABLE": pdres_out["shareable"],
-                                    "NAME": pdres_out["name"],
-                                    "VENDOR": pdres_out["vendor"],
-                                    "DISKINFO": pdres_out["absolutePath"],
-                                }
-                            )
-                            # print(json.dumps(pdres_out, indent=2))
-                            # print(
-                            #     dout["diskTarget"],
-                            #     dout["id"]["value"],
-                            #     dout["virtualDiskId"]["value"],
-                            #     dout["virtualDiskId"]["name"],
-                            # )
-                        elif (
-                            "storageElementId" in dout
-                            and dout.get("storageElementId") != None
-                        ):
-                            # print(json.dumps(dout, indent=2))
-                            extrav = (
-                                "StorageElement/" + dout["storageElementId"]["value"]
-                            )
-                            pdres = OpenSess(args, baseUri, extrav)
-                            time.sleep(1)
-                            pdres_out = pdres.json()
-                            output_list.append(
-                                {
-                                    "SCSIID": dout["diskTarget"],
-                                    "OVMID": dout["id"]["value"],
-                                    "DISKTYPE": pdres_out["type"],
-                                    "SIZE": pdres_out["size"],
-                                    "SHAREABLE": pdres_out["shareable"],
-                                    "NAME": pdres_out["name"],
-                                    "VENDOR": pdres_out["vendor"],
-                                    "DISKINFO": pdres_out["deviceNames"][0],
-                                }
-                            )
+                        output_list.append(copy.deepcopy(to_append))
 
-    for row in output_list:
-        print(row)
-        Final_output.writerow(row)
+    # for row in output_list:
+    #     print(type(row))
+    #     print(row)
+
+    with open(fname, "w") as file_name:
+        Final_output = csv.DictWriter(file_name, fieldnames=fieldnames)
+        Final_output.writeheader()
+        for line in output_list:
+            Final_output.writerow(line)
     file_name.close()
 
 
