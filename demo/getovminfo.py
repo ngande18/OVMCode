@@ -150,16 +150,16 @@ def ValidateAnsFile(args, scsiids, cphydisks, sphydisks, disknames):
                 print(line[0] + " is already used on " + args.vm)
                 validres = 999
                 sys.exit(0)
-            elif line[1] in cphydisks:
-                print(line[0] + " is already attached on " + args.vm)
+            elif ("3" + line[1].lower()) in cphydisks:
+                print(("3" + line[1]) + " is already attached on " + args.vm)
                 validres = 999
                 sys.exit(0)
-            elif line[1] not in sphydisks:
-                print(line[1] + " is not attached on " + args.srv)
+            elif ("3" + line[1].lower()) not in sphydisks:
+                print(("3" + line[1]) + " is not attached on " + args.srv)
                 validres = 999
                 sys.exit(0)
-            elif line[4] in disknames:
-                print(line[4] + "diskname is already used on " + args.vm)
+            elif line[3] in disknames:
+                print(line[3] + " diskname is already used on " + args.vm)
                 validres = 999
                 sys.exit(0)
             else:
