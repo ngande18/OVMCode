@@ -368,8 +368,27 @@ def main():
             )
             if res == 200:
                 print(
-                    "Answer file and current disk Layout is  validated and Building Commands list"
+                    "Answer file and current disk Layout is  validated and Building Commands list........."
                 )
+                with open(args.ans, "r") as myansfile:
+                    csv_reader = csv.reader(myansfile)
+                    next(myansfile)
+                    shareans = ""
+                    for line in csv_reader:
+                        for item in diskid_list:
+                            if line[1].lower == item["DISKINFO"]:
+                                if item["SHAREABLE"] == ["Y" "y"]["E" "e"]["S" "s"]:
+                                    shareans = "Yes"
+                                else:
+                                    shareans = "No"
+                                print(
+                                    "edit PhysicalDisk id="
+                                    + item["OVMID"]
+                                    + "shareable="
+                                    + shareans
+                                    + "name="
+                                    + line[3]
+                                )
 
 
 if __name__ == "__main__":
