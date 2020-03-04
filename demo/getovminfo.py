@@ -67,6 +67,43 @@ def OpenSess(args, baseUri, extrav):
         r.close()
 
 
+def CheckDups(args):
+    res = 200
+    CHECKFILE = args.ans
+    with open(CHECKFILE, "r") as AnsF:
+        csv_reader = csv.reader(AnsF)
+        next(csv_reader)
+        slot_list = [line[0] for line in csv_reader]
+        with open(CHECKFILE, "r") as AnsF:
+            csv_reader = csv.reader(AnsF)
+            next(csv_reader)
+            disk_list = [line[1] for line in csv_reader]
+            with open(CHECKFILE, "r") as AnsF:
+                csv_reader = csv.reader(AnsF)
+                next(csv_reader)
+                name_list = [line[3] for line in csv_reader]
+
+    for item in slot_list:
+        if slot_list.count(item) > 1:
+            Repeats = slot_list.count(item)
+            print("slot {} used {} times in your answer file".format(item, Repeats))
+            res = 999
+
+    for item in disk_list:
+        if disk_list.count(item) > 1:
+            Repeats = disk_list.count(item)
+            print("slot {} used {} times in your answer file".format(item, Repeats))
+            res = 999
+
+    for item in name_list:
+        if name_list.count(item) > 1:
+            Repeats = name_list.count(item)
+            print("slot {} used {} times in your answer file".format(item, Repeats))
+            res = 999
+
+    return res
+
+
 def vmList(args, baseUri, extrav):
     print(
         "{:^20} {:^30} {:^12} {:^5} {:^8} {:^15}".format(
@@ -111,19 +148,19 @@ def ValidateAnsFile(args, scsiids, cphydisks, sphydisks, disknames):
         for line in csv_reader:
             if line[0] in scsiids:
                 print(line[0] + " is already used on " + args.vm)
-                validres = "999"
+                validres = 999
                 sys.exit(0)
             elif line[1] in cphydisks:
                 print(line[0] + " is already attached on " + args.vm)
-                validres = "999"
+                validres = 999
                 sys.exit(0)
             elif line[1] not in sphydisks:
                 print(line[1] + " is not attached on " + args.srv)
-                validres = "999"
+                validres = 999
                 sys.exit(0)
             elif line[4] in disknames:
                 print(line[4] + "diskname is already used on " + args.vm)
-                validres = "999"
+                validres = 999
                 sys.exit(0)
             else:
                 validres = 200
@@ -317,15 +354,19 @@ def main():
 
     if args.action == "adddisks" and (args.srv) and (args.vm) and (args.ans):
         print("Validating Current Disk Layout and Answerfile\n")
-        (currentN_list, current_dlist, scsi_idlist, output_list) = vmShowd(
-            args, baseUri, "Vm"
-        )
-        (diskid_list, output_list) = srvDiskList(args, baseUri, "Server")
-        res = ValidateAnsFile(
-            args, scsi_idlist, current_dlist, diskid_list, currentN_list
-        )
-        if res == 200:
-            print("Answer file is validated and Building Commands list")
+        my_res = CheckDups(args)
+        if my_res == 200:
+            (currentN_list, current_dlist, scsi_idlist, output_list) = vmShowd(
+                args, baseUri, "Vm"
+            )
+            (diskid_list, output_list) = srvDiskList(args, baseUri, "Server")
+            res = ValidateAnsFile(
+                args, scsi_idlist, current_dlist, diskid_list, currentN_list
+            )
+            if res == 200:
+                print(
+                    "Answer file and current disk Layout is  validated and Building Commands list"
+                )
 
 
 if __name__ == "__main__":
