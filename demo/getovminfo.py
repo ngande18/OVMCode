@@ -10,6 +10,7 @@ import urllib3
 import time
 import csv
 import copy
+from operator import itemgetter
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -191,6 +192,7 @@ def srvDiskList(args, baseUri, extrav):
                     "SIZE": (pdres_out["size"] / 1024 / 1024 / 1024),
                     "SHAREABLE": pdres_out["shareable"],
                     "NAME": pdres_out["name"],
+                    "OVMID": pdres_out["id"]["value"],
                     "VENDOR": pdres_out["vendor"],
                     "DISKINFO": dname,
                 }
@@ -346,14 +348,15 @@ def main():
             "SIZE",
             "SHAREABLE",
             "NAME",
+            "OVMID",
             "VENDOR",
             "DISKINFO",
         ]
         (diskid_list, output_list) = srvDiskList(args, baseUri, "Server")
-        WriteToFile(fname, fieldnames, output_list)
+        WriteToFile(fname, fieldnames, sorted(output_list, key=itemgetter("SIZE")))
 
     if args.action == "adddisks" and (args.srv) and (args.vm) and (args.ans):
-        print("Validating Current Disk Layout and Answerfile\n")
+        print("Validating Current Disk Layout and Answerfile")
         my_res = CheckDups(args)
         if my_res == 200:
             (currentN_list, current_dlist, scsi_idlist, output_list) = vmShowd(
