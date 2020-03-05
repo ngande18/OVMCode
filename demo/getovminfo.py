@@ -367,7 +367,7 @@ def main():
             "VENDOR",
             "DISKINFO",
         ]
-        (currentN_list, current_dlist, scsi_idlist, output_list) = vmShowd(
+        (vm_id, currentN_list, current_dlist, scsi_idlist, output_list) = vmShowd(
             args, baseUri, "Vm"
         )
         WriteToFile(fname, fieldnames, output_list)
