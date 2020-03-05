@@ -427,15 +427,15 @@ def main():
 
                     f.close()
 
-                    with open(fname, "r") as f:
-                        data = f.readlines()
-                        data.sort()
-                        print(data)
-                        # with open(fname_sorted, "w") as f1:
-                        #     for line in data:
-                        #         f.write(line)
-                        # f1.close()
-                    f.close()
+                    # with open(fname, "r") as f:
+                    #     data = f.readlines()
+                    #     data.sort(reverse=True)
+                    #     print(data)
+                    #     # with open(fname_sorted, "w") as f1:
+                    #     #     for line in data:
+                    #     #         f.write(line)
+                    #     # f1.close()
+                    # f.close()
 
 
 if __name__ == "__main__":
