@@ -374,16 +374,25 @@ def main():
                     csv_reader = csv.reader(myansfile)
                     next(myansfile)
                     shareans = ""
-                    for line in csv_reader:
-                        MYDISK = str("3" + line[1].lower())
-                        DISKNAME = str(line[3])
-                        for i in output_list:
-                            if str(i["DISKINFO"]) == MYDISK:
-                                print(
-                                    "edit PhysicalDisk id={} shareable={} name={}".format(
-                                        i["OVMID"], line[2].title(), DISKNAME
+                    fname = "{}_diskadd.txt".format(args.vm)
+                    with open(fname, "w") as f:
+                        for line in csv_reader:
+                            MYDISK = str("3" + line[1].lower())
+                            DISKNAME = str(line[3])
+                            for i in output_list:
+                                if str(i["DISKINFO"]) == MYDISK:
+                                    f.write(
+                                        "edit PhysicalDisk id={} shareable={} name={}\n".format(
+                                            i["OVMID"], line[2].title(), DISKNAME
+                                        )
                                     )
-                                )
+
+                    f.close()
+                    # print(
+                    #     "edit PhysicalDisk id={} shareable={} name={}".format(
+                    #         i["OVMID"], line[2].title(), DISKNAME
+                    #     )
+                    # )
 
 
 if __name__ == "__main__":
