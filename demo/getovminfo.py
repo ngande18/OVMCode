@@ -375,19 +375,14 @@ def main():
                     next(myansfile)
                     shareans = ""
                     for line in csv_reader:
-                        for item in diskid_list:
-                            if line[1].lower == item["DISKINFO"]:
-                                if item["SHAREABLE"] == ["Y" "y"]["E" "e"]["S" "s"]:
-                                    shareans = "Yes"
-                                else:
-                                    shareans = "No"
+                        MYDISK = str("3" + line[1].lower())
+                        DISKNAME = str(line[3])
+                        for i in output_list:
+                            if str(i["DISKINFO"]) == MYDISK:
                                 print(
-                                    "edit PhysicalDisk id="
-                                    + item["OVMID"]
-                                    + "shareable="
-                                    + shareans
-                                    + "name="
-                                    + line[3]
+                                    "edit PhysicalDisk id={} shareable={} name={}".format(
+                                        i["OVMID"], line[2].title(), DISKNAME
+                                    )
                                 )
 
 
