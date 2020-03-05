@@ -1,4 +1,5 @@
 #!/usr/bin/env /usr/bin/python
+#
 ##############################################
 
 import argparse
@@ -204,13 +205,19 @@ def srvDiskList(args, baseUri, extrav):
 def vmShowd(args, baseUri, extrav):
     res = OpenSess(args, baseUri, extrav)
     time.sleep(1)
+    vm_id = ""
     output_list = []
     scsi_idlist = []
     current_dlist = []
     currentN_list = []
     for i in res.json():
         if i["name"] == args.vm:
-            print("{:20} {:55}".format(i["name"], i["vmRunState"]))
+            vm_id = i["id"]["value"]
+            print(
+                "{:20} {:40} {:35} ".format(
+                    i["name"], i["id"]["value"], i["vmRunState"]
+                )
+            )
             for d in i["vmDiskMappingIds"]:
                 if "CDROM" not in d["name"]:
                     extrav = "VmDiskMapping/" + d["value"]
@@ -286,7 +293,7 @@ def vmShowd(args, baseUri, extrav):
     #     print(type(row))
     #     print(row)
 
-    return (currentN_list, current_dlist, scsi_idlist, output_list)
+    return (vm_id, currentN_list, current_dlist, scsi_idlist, output_list)
 
 
 def WriteToFile(fname, fieldnames, output_list):
@@ -339,7 +346,7 @@ def main():
             args, baseUri, "Vm"
         )
         WriteToFile(fname, fieldnames, output_list)
-        print(currentN_list)
+        # print(currentN_list)
 
     if args.action == "srvdisks" and (args.srv):
         fname = "{}_diskinfo.csv".format(args.srv)
@@ -359,7 +366,7 @@ def main():
         print("Validating Current Disk Layout and Answerfile")
         my_res = CheckDups(args)
         if my_res == 200:
-            (currentN_list, current_dlist, scsi_idlist, output_list) = vmShowd(
+            (vm_id, currentN_list, current_dlist, scsi_idlist, output_list) = vmShowd(
                 args, baseUri, "Vm"
             )
             (diskid_list, output_list) = srvDiskList(args, baseUri, "Server")
@@ -375,6 +382,7 @@ def main():
                     next(myansfile)
                     shareans = ""
                     fname = "{}_diskadd.txt".format(args.vm)
+                    fname_sorted = "{}_diskadd_sorted.txt".format(args.vm)
                     with open(fname, "w") as f:
                         for line in csv_reader:
                             MYDISK = str("3" + line[1].lower())
@@ -382,17 +390,24 @@ def main():
                             for i in output_list:
                                 if str(i["DISKINFO"]) == MYDISK:
                                     f.write(
-                                        "edit PhysicalDisk id={} shareable={} name={}\n".format(
+                                        "edit PhysicalDisk id={} shareable={} name={} \n".format(
                                             i["OVMID"], line[2].title(), DISKNAME
+                                        )
+                                    )
+                                    f.write(
+                                        "create VmDiskMapping slot={} physicalDisk={} name={} on Vm id={} \n".format(
+                                            line[0], i["OVMID"], DISKNAME, vm_id
                                         )
                                     )
 
                     f.close()
-                    # print(
-                    #     "edit PhysicalDisk id={} shareable={} name={}".format(
-                    #         i["OVMID"], line[2].title(), DISKNAME
-                    #     )
-                    # )
+                    with open(fname_sorted, "w") as f1:
+                        with open(fname, "r") as f:
+                            data = f.readlines()
+                            data.sort()
+                            for line in data:
+                                f.write(line)
+                    f1.close()
 
 
 if __name__ == "__main__":
