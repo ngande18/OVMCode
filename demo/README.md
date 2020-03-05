@@ -138,3 +138,32 @@ It will Create a file in your current Directory
 ```
 
 **Attach disks to VMs**
+
+```
+ ./getovminfo adddisks -u admin -p <password>  --dc dal3 --vm a0680o3odbsd415 --srv a0001p5hovsd325 --ans a0680o3odbsd415_ans.csv
+Validating Current Disk Layout and Answerfile
+a0680o3odbsd415      0004fb0000060000208e342be250381e         RUNNING
+Gathering SCSIID 0 Disk information
+Gathering SCSIID 1 Disk information
+Gathering SCSIID 2 Disk information
+Gathering SCSIID 3 Disk information
+Gathering SCSIID 4 Disk information
+Gathering SCSIID 5 Disk information
+Gathering SCSIID 6 Disk information
+Gathering SCSIID 7 Disk information
+Gathering SCSIID 8 Disk information
+Gathering SCSIID 9 Disk information
+Gathering SCSIID 10 Disk information
+Gathering SCSIID 11 Disk information
+a0001p5hovsd325      RUNNING                        J1004862
+Answer file and current disk Layout is  validated and Building Commands list.........
+```
+
+Files:
+
+```
+ # ls -lrt | tail -1
+-rw------- 1 ngande users   18606 Mar  5 16:44 a0680o3odbsd415_diskadd.txt
+ # ls -lrt | grep ans
+-rw------- 1 ngande users    5175 Mar  5 09:48 a0680o3odbsd415_ans.csv
+```
