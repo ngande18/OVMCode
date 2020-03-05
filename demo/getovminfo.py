@@ -139,17 +139,17 @@ def vmList(args, baseUri, extrav):
     )
     res = OpenSess(args, baseUri, extrav)
     for i in res.json():
-        #        print(json.dumps(i, indent=2, sort_keys=True))
-        print(
-            "{:20} {:30} {:12} {:5} {:8} {:15}".format(
-                i["name"],
-                i["id"]["value"],
-                i["vmRunState"],
-                i["cpuCount"],
-                i["currentMemory"],
-                i["serverId"]["name"],
+        if i["serverId"] is not None:
+            print(
+                "{:20} {:30} {:12} {:5} {:8} {:15}".format(
+                    i["name"],
+                    i["id"]["value"],
+                    i["vmRunState"],
+                    i["cpuCount"],
+                    i["currentMemory"],
+                    i["serverId"]["name"],
+                )
             )
-        )
 
 
 def srvList(args, baseUri, extrav):
