@@ -1,5 +1,5 @@
 #!/usr/bin/env /usr/bin/python
-# Created by Naveen Gande for Geico(ngande@us.ibm.com)
+# Created by Naveen Gande
 # This script will connect to OVM and provide  following Information
 # If you don't Specify the username - it will assume default user as admin and ask for password
 # Actions:
