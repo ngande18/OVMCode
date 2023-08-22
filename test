@@ -1,1 +1,79 @@
-test
+
+
+emailID=ngande@express-scripts.com MGothe@express-scripts.com
+
+SHOST=`hostname`
+if [ $# -ne 1 ];then
+  exit 0
+  echo "Specify Destination Host"
+else
+  DHOST=$1
+fi
+ID=`/usr/bin/whoami|awk '{print $1}'`
+cR="\033[31m";cG="\033[32m";cY="\033[33m";cP="\033[35m";cB="\033[36m";cE="\033[m";bO="\033[1m";bE="\033[0m";
+echo -e "${cY}PLEASE CONFIRM !!!   ${cE}"
+echo -e "${cG}Source      = $SHOST ${cE}"
+echo -e "${cB}Destination = $DHOST ${cE}"
+echo -e "${cY}Script will proceed in 5 seconds, Ctrl+C now if destination is incorrect!${cE}"
+sleep 5
+echo "1.0 Verifying SSH connection from $SHOST to $DHOST"
+ssh -q -o BatchMode=yes -o ConnectTimeout=3 -o ConnectionAttempts=1 $DHOST "uname -n"
+if [ $? -ne 0 ];then
+  echo "1.1 Please setup ssh keys to allow passwordless connection as root to $DHOST"
+  exit
+else
+    echo "2.0 Checking for rsync package in $DHOST"
+    DSSHCT=`ssh -q $DHOST "rpm -qa|grep rsync"|wc -l`
+    if [ $DSSHCT -eq 0 ];then
+       echo "2.1 Installing FNMArsync package in $DHOST"
+       ssh -q $DHOST "yum -y install rsync"
+    else
+       echo "2.2 rsync package found installed in $DHOST"
+    fi
+fi
+
+LOCRSYNC=`rpm -qa|grep rsync|wc -l`
+echo "3.0 Checking for for rsync package in $SHOST"
+if [ $LOCRSYNC -eq 0 ];then
+echo "3.1 Installing rsync package in $SHOST"
+yum -y install rsync
+    if [ $? -ne 0 ];then
+    echo "echo 3.2 rsync package found installed in $SHOST"
+    fi
+fi
+
+if [ ! -f /var/tmp/rsync.list ];then
+    echo "4.0 Create /var/tmp/rsync.list with SOURCE <space> DESTINATION filesystem info! on $SHOST"
+    exit 1
+else
+    echo "4.1 /var/tmp/rsync.list found....."
+    COLRSYNC=`awk 'BEGIN{FS=" "}END{print NF}' /var/tmp/rsync.list`
+    if [ $COLRSYNC -eq 1 ];then
+        echo "4.1.1. rsync.list with one column detected,creating two columns for you!"
+        cp -p /var/tmp/rsync.list /var/tmp/rsync.list.ORIG
+        paste /var/tmp/rsync.list.ORIG /var/tmp/rsync.list.ORIG > /var/tmp/rsync.list
+    fi
+fi
+
+#RPS=`ps -ef|grep -i "rsync"|egrep -v "grep|tail"|wc -l`
+#echo $RPS
+#if [ $RPS -gt 1 ];then
+#    echo "5.0 Found another rsync process running!"
+#    exit 1
+#fi
+
+echo "6.0 Initiating RSYNC, log file is $SHOST:/var/tmp/${SHOST}_rsync.out"
+CT=1
+cat /var/tmp/rsync.list|while read SFS DFS
+do
+   echo "6.${CT} Starting RSYNC of $SFS ====> $DFS"
+   echo "`date +%m%d-%H:%M` [RSYNC_START] $SFS ====> $DFS" >> /var/tmp/${SHOST}_rsync.out
+   /usr/bin/rsync -e ssh -avH --blocking-io --links --acls --inplace --exclude=lost+found/ $SFS/ ${DHOST}:$DFS/ >> /var/tmp/${SHOST}_rsync.out 2>&1
+   echo "`date +%m%d-%H:%M` [RSYNC_ENDED] $SFS ====> $DFS" >> /var/tmp/${SHOST}_rsync.out
+   CT=$(($CT+1))
+done
+
+echo "7.0 RSYNC COMPLETED, sending email to $emailID"
+echo "`date +%m%d-%H:%M` [RSYNC_COMPLETED]" >> /var/tmp/${SHOST}_rsync.out
+egrep "RSYNC_START|bytes/sec|RSYNC_ENDED" /var/tmp/${SHOST}_rsync.out|mailx -s "Rsync on $SHOST - COMPLETED"  $emailID
+
