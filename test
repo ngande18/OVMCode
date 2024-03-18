@@ -1,4 +1,8 @@
 
+"We've effectively integrated Dynatrace version 0.15 into gp-1-infrapoc. Utilizing Helm chart, we initially planned to deploy manifests individually for each cluster, aiming for greater customization. However, due to time constraints, we've opted for deploying the new version with flavor level. Presently, we're conducting tests by deploying some test applications, and so far, everything appears to be in order. We're also reviewing the release notes to identify any features that could be beneficial for our environment. Once the initial testing phase is complete, we'll proceed with deployment to infrapoc and poc clusters."
+
+
+
 
 emailID=ngande@express-scripts.com MGothe@express-scripts.com
 
